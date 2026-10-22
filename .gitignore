@@ -1,0 +1,12 @@
+# data and outputs
+data/
+runs/
+*.pt
+*.onnx
+# python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+# os
+.DS_Store

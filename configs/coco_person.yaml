@@ -1,0 +1,6 @@
+# YOLO dataset config for the COCO person subset (paths filled in by data prep)
+path: ../data/coco_person
+train: images/train2017
+val: images/val2017
+names:
+  0: person
