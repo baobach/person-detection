@@ -1,0 +1,13 @@
+[project]
+name = "person-detection"
+version = "0.1.0"
+description = "Person detection in images with YOLO on COCO"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ultralytics",
+    "pycocotools",
+    "opencv-python",
+    "matplotlib",
+    "pandas",
+]

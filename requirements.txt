@@ -1,5 +1,0 @@
-ultralytics
-pycocotools
-opencv-python
-matplotlib
-pandas

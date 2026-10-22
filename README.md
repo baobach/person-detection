@@ -26,7 +26,9 @@ report/     write-up and figures
 ```
 
 ## Setup
+Environment is managed with [uv](https://docs.astral.sh/uv/).
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+uv sync                 # creates .venv and uv.lock from pyproject.toml
+uv run python src/<script>.py
+uv add <package>        # add a dependency
 ```
