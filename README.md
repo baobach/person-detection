@@ -15,6 +15,11 @@ Detect and localize people in images with bounding boxes. The system must handle
 4. Visualize detections on test images.
 5. Error analysis: crowded scenes, small persons, occlusion. Try data augmentation and fine-tuning variants.
 
+## Architecture
+![Single-class person detection with YOLOv8s](report/person_detection_yolov8s_architecture.png)
+
+YOLOv8s fine-tuned to one class. A C2f and SPPF backbone feeds a bidirectional neck (FPN top-down, PAN bottom-up) and three anchor-free heads at strides 8, 16, and 32.
+
 ## Layout
 ```
 configs/    dataset and training configs (YOLO data yaml)
@@ -22,7 +27,7 @@ src/        data preparation, training, evaluation, visualization scripts
 notebooks/  exploration and result plots
 data/       COCO images and labels (not committed)
 runs/       trained YOLOv8s weights and metrics
-report/     PDF report and sample detections
+report/     PDF report, architecture diagram, and sample detections
 ```
 
 ## Result
