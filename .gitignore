@@ -1,7 +1,11 @@
 # data and outputs
 data/
-runs/
+runs/*
+!runs/yolov8s_coco_person/
+!runs/yolov8s_coco_person/**
+logs/
 *.pt
+!runs/yolov8s_coco_person/weights/*.pt
 *.onnx
 # python
 __pycache__/
