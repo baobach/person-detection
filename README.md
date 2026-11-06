@@ -37,7 +37,7 @@ YOLOv8s was fine-tuned for 50 epochs on the COCO person training images and eval
 | --- | --- | --- | --- |
 | 83.50% | 72.21% | 81.94% | 58.96% |
 
-The weights are `runs/yolov8s_coco_person/weights/best.pt`. The write-up, with sample detections, is `report/person_detection_report.pdf`. Train again with:
+The weights are `runs/yolov8s_coco_person/weights/best.pt`. The write-up, with sample detections, is `report/person_detection_report.pdf`. Every validation image with people highlighted, plus the curves and confusion matrices, is in [`full-results/`](full-results/). Train again with:
 
 ```bash
 uv run python src/train.py --model yolov8s.pt --epochs 50 --batch 32
