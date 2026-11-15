@@ -43,6 +43,21 @@ The weights are `runs/yolov8s_coco_person/weights/best.pt`. The write-up, with s
 uv run python src/train.py --model yolov8s.pt --epochs 50 --batch 32
 ```
 
+## Evaluation and error analysis
+`src/evaluate.py` compares the fine-tuned model with the stock COCO-pretrained YOLOv8s (person class only) on the same val2017 person images. It also breaks the official COCO AP (pycocotools) down by person size and by the number of people in the image. Results go to [`report/eval/results.md`](report/eval/results.md) and `results.json`.
+
+```bash
+uv run python src/prepare_coco.py --splits val   # if data/coco_person/images/val2017 is missing
+uv run python src/evaluate.py --device 0
+```
+
+| Model | Precision | Recall | mAP@0.5 | mAP@0.5:0.95 |
+| --- | --- | --- | --- | --- |
+| Fine-tuned YOLOv8s | 83.50 | 72.21 | 81.94 | 58.96 |
+| Pretrained YOLOv8s, person class | 82.75 | 69.77 | 79.76 | 57.02 |
+
+Small people (under 32x32 px) are 40% of the 10,777 people and the weakest case: COCO AP 0.390 (small) vs 0.685 (medium) and 0.809 (large). AP also falls as images get crowded: 0.799 with one person, 0.656 with 2 to 5, 0.547 with 6 or more. The pretrained model already saw COCO train2017, so fine-tuning gains come from specializing to one class; most of the gain is on small people (+0.027 AP).
+
 ## Setup
 Environment is managed with [uv](https://docs.astral.sh/uv/).
 ```bash
