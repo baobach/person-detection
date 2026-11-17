@@ -67,18 +67,19 @@ def ultralytics_val(model, data_dir: Path, work_dir: Path, name: str, person_cla
 
 
 def predict_coco(model, images: list[Path], person_class: int | None, device: str, imgsz: int,
-                 batch: int) -> list[dict]:
+                 batch: int, augment: bool = False) -> list[dict]:
     """Predict every image and return detections in COCO results format (person only).
 
     Uses the same low confidence threshold as Ultralytics val (0.001), since AP needs
     the whole precision-recall curve. File stems are the COCO image ids.
+    augment=True turns on Ultralytics test-time augmentation (flips and rescales).
     """
     dets = []
     classes = None if person_class is None else [person_class]
     for i in range(0, len(images), batch):
         chunk = [str(p) for p in images[i:i + batch]]
         for r in model.predict(chunk, imgsz=imgsz, conf=0.001, iou=0.7, max_det=300,
-                               classes=classes, device=device, verbose=False):
+                               classes=classes, device=device, augment=augment, verbose=False):
             image_id = int(Path(r.path).stem)
             for (x1, y1, x2, y2), score in zip(r.boxes.xyxy.tolist(), r.boxes.conf.tolist()):
                 dets.append({"image_id": image_id, "category_id": PERSON_CAT_ID,

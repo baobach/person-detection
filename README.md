@@ -27,7 +27,7 @@ src/        data preparation, training, evaluation, visualization scripts
 notebooks/  exploration and result plots
 data/       COCO images and labels (not committed)
 runs/       trained YOLOv8s weights and metrics
-report/     PDF report, architecture diagram, and sample detections
+report/     final report, evaluation and analysis results, figures, sample detections
 ```
 
 ## Result
@@ -37,7 +37,7 @@ YOLOv8s was fine-tuned for 50 epochs on the COCO person training images and eval
 | --- | --- | --- | --- |
 | 83.50% | 72.21% | 81.94% | 58.96% |
 
-The weights are `runs/yolov8s_coco_person/weights/best.pt`. The write-up, with sample detections, is `report/person_detection_report.pdf`. Every validation image with people highlighted, plus the curves and confusion matrices, is in [`full-results/`](full-results/). Train again with:
+The weights are `runs/yolov8s_coco_person/weights/best.pt`. The final report is [`report/final_report.pdf`](report/final_report.pdf) (source: `report/final_report.md`). The earlier two-page results summary is `report/person_detection_report.pdf`. Every validation image with people highlighted, plus the curves and confusion matrices, is in [`full-results/`](full-results/). Train again with:
 
 ```bash
 uv run python src/train.py --model yolov8s.pt --epochs 50 --batch 32
@@ -57,6 +57,17 @@ uv run python src/evaluate.py --device 0
 | Pretrained YOLOv8s, person class | 82.75 | 69.77 | 79.76 | 57.02 |
 
 Small people (under 32x32 px) are 40% of the 10,777 people and the weakest case: COCO AP 0.390 (small) vs 0.685 (medium) and 0.809 (large). AP also falls as images get crowded: 0.799 with one person, 0.656 with 2 to 5, 0.547 with 6 or more. The pretrained model already saw COCO train2017, so fine-tuning gains come from specializing to one class; most of the gain is on small people (+0.027 AP).
+
+`src/analyze.py` covers the remaining conditions from the proposal and one inference experiment. Results, figures, and failure examples go to [`report/analysis/`](report/analysis/results.md).
+
+```bash
+uv run python src/analyze.py --device 0          # about 12 minutes on a TITAN RTX
+```
+
+* **Occlusion** (share of a person's COCO keypoints marked hidden, medium and large people): recall 0.92 with nothing hidden, 0.81 with 26 to 50% hidden, 0.60 with more than half hidden.
+* **Lighting** (mean image brightness): AP 0.578 dark, 0.603 normal, 0.587 bright. A small effect.
+* **Error types** at confidence 0.25: 81% of boxes are correct, 5% are localization errors, 4% background, 2% duplicates, and 7% fall in COCO crowd regions (ignored). 75% of the missed people are small.
+* **Experiment:** the same weights at a larger input help small people but hurt large ones (AP large 0.809 at 640, 0.517 at 1280). Merging the 640 and 960 predictions with NMS gives the best AP, 0.622 (vs 0.600), with small-person AP 0.445 (vs 0.390).
 
 ## Setup
 Environment is managed with [uv](https://docs.astral.sh/uv/).
