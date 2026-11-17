@@ -1,77 +1,89 @@
 # Person Detection in Images
 
-Course project. Team: Tejas Mahajan, Van Hoang Bao Bach.
+CAP 5415 Computer Vision course project. Team: Tejas Mahajan, Van Hoang Bao Bach.
 
-## Problem
-Detect and localize people in images with bounding boxes. The system must handle multiple people per image, different lighting, backgrounds and scales, and partial occlusion.
+We fine-tune a pretrained YOLOv8s detector on the person images of COCO 2017, evaluate it on COCO val2017, and analyze where it fails: small people, crowded scenes, partial occlusion, and lighting. The full write-up is [`report/final_report.pdf`](report/final_report.pdf).
 
-## Dataset
-[COCO](https://cocodataset.org) (Common Objects in Context), `person` category only (COCO class id 0 in YOLO format).
+## Results
 
-## Approach
-1. Preprocess: filter COCO to images with `person`, convert annotations to YOLO format.
-2. Fine-tune a pretrained YOLO model on the person subset.
-3. Evaluate: precision, recall, mAP@0.5, mAP@0.5:0.95.
-4. Visualize detections on test images.
-5. Error analysis: crowded scenes, small persons, occlusion. Try data augmentation and fine-tuning variants.
-
-## Architecture
-![Single-class person detection with YOLOv8s](report/person_detection_yolov8s_architecture.png)
-
-YOLOv8s fine-tuned to one class. A C2f and SPPF backbone feeds a bidirectional neck (FPN top-down, PAN bottom-up) and three anchor-free heads at strides 8, 16, and 32.
-
-## Layout
-```
-configs/    dataset and training configs (YOLO data yaml)
-src/        data preparation, training, evaluation, visualization scripts
-data/       COCO images and labels (not committed)
-runs/       trained YOLOv8s weights and metrics
-report/     final report, evaluation and analysis results, figures, sample detections
-```
-
-## Result
-YOLOv8s was fine-tuned for 50 epochs on the COCO person training images and evaluated on COCO `val2017` (2,693 images, 10,777 people).
-
-| Precision | Recall | mAP@0.5 | mAP@0.5:0.95 |
-| --- | --- | --- | --- |
-| 83.50% | 72.21% | 81.94% | 58.96% |
-
-The weights are `runs/yolov8s_coco_person/weights/best.pt`. The final report is [`report/final_report.pdf`](report/final_report.pdf) (source: `report/final_report.md`). The earlier two-page results summary is `report/person_detection_report.pdf`. Every validation image with people highlighted, plus the curves and confusion matrices, is in [`full-results/`](full-results/). Train again with:
-
-```bash
-uv run python src/train.py --model yolov8s.pt --epochs 50 --batch 32
-```
-
-## Evaluation and error analysis
-`src/evaluate.py` compares the fine-tuned model with the stock COCO-pretrained YOLOv8s (person class only) on the same val2017 person images. It also breaks the official COCO AP (pycocotools) down by person size and by the number of people in the image. Results go to [`report/eval/results.md`](report/eval/results.md) and `results.json`.
-
-```bash
-uv run python src/prepare_coco.py --splits val   # if data/coco_person/images/val2017 is missing
-uv run python src/evaluate.py --device 0
-```
+Fine-tuned for 50 epochs on 64,115 COCO train2017 person images. Evaluated on the 2,693 val2017 images with people (10,777 people).
 
 | Model | Precision | Recall | mAP@0.5 | mAP@0.5:0.95 |
 | --- | --- | --- | --- | --- |
-| Fine-tuned YOLOv8s | 83.50 | 72.21 | 81.94 | 58.96 |
-| Pretrained YOLOv8s, person class | 82.75 | 69.77 | 79.76 | 57.02 |
+| Pretrained YOLOv8s, person class only | 82.75% | 69.77% | 79.76% | 57.02% |
+| **Fine-tuned YOLOv8s (ours)** | **83.50%** | **72.21%** | **81.94%** | **58.96%** |
 
-Small people (under 32x32 px) are 40% of the 10,777 people and the weakest case: COCO AP 0.390 (small) vs 0.685 (medium) and 0.809 (large). AP also falls as images get crowded: 0.799 with one person, 0.656 with 2 to 5, 0.547 with 6 or more. The pretrained model already saw COCO train2017, so fine-tuning gains come from specializing to one class; most of the gain is on small people (+0.027 AP).
+Main findings (details in the report, Sections 6 and 7):
 
-`src/analyze.py` covers the remaining conditions from the proposal and one inference experiment. Results, figures, and failure examples go to [`report/analysis/`](report/analysis/results.md).
+* **Size** is the main weakness. Recall is 0.94 for large people and 0.50 for small people (under 32x32 px). 75% of the missed people are small.
+* **Crowding:** COCO AP is 0.80 in images with one person and 0.55 in images with six or more.
+* **Occlusion:** recall stays at 0.92 with up to a quarter of the body hidden, and falls to 0.60 when more than half is hidden.
+* **Lighting** has a small effect: AP 0.578 in dark images vs 0.603 in normal ones.
+* **False boxes** are mostly loose boxes near a person. Only 4% of boxes are false alarms on the background.
+* **Experiment:** a larger input size helps small people but hurts large ones. Merging the predictions at 640 and 960 with NMS raises COCO AP from 0.600 to 0.622, without retraining.
 
-```bash
-uv run python src/analyze.py --device 0          # about 12 minutes on a TITAN RTX
+![Single-class person detection with YOLOv8s](report/person_detection_yolov8s_architecture.png)
+
+## Repository layout
+
 ```
-
-* **Occlusion** (share of a person's COCO keypoints marked hidden, medium and large people): recall 0.92 with nothing hidden, 0.81 with 26 to 50% hidden, 0.60 with more than half hidden.
-* **Lighting** (mean image brightness): AP 0.578 dark, 0.603 normal, 0.587 bright. A small effect.
-* **Error types** at confidence 0.25: 81% of boxes are correct, 5% are localization errors, 4% background, 2% duplicates, and 7% fall in COCO crowd regions (ignored). 75% of the missed people are small.
-* **Experiment:** the same weights at a larger input help small people but hurt large ones (AP large 0.809 at 640, 0.517 at 1280). Merging the 640 and 960 predictions with NMS gives the best AP, 0.622 (vs 0.600), with small-person AP 0.445 (vs 0.390).
+configs/coco_person.yaml        YOLO dataset config (written by prepare_coco.py)
+src/
+  prepare_coco.py               download COCO person subset, convert labels to YOLO format
+  train.py                      fine-tune YOLOv8s (Ultralytics)
+  evaluate.py                   fine-tuned vs pretrained, COCO AP by size and crowding
+  analyze.py                    occlusion, lighting, error types, failure examples, input-size experiment
+scripts/train_newton.slurm      training job for the UCF Newton cluster (one V100)
+runs/yolov8s_coco_person/       trained weights (best.pt, last.pt) and the per-epoch training log
+full-results/                   every val2017 image with detections, detections.csv, curves, confusion matrices
+report/
+  final_report.md, .pdf         final report
+  eval/                         output of evaluate.py
+  analysis/                     output of analyze.py: tables, figures, failure examples
+  samples/                      sample detections used in the report
+  person_detection_report.pdf   earlier two-page results summary
+data/                           COCO images and labels (not committed, made by prepare_coco.py)
+```
 
 ## Setup
-Environment is managed with [uv](https://docs.astral.sh/uv/).
+
+The environment is managed with [uv](https://docs.astral.sh/uv/) (Python 3.11).
+
 ```bash
-uv sync                 # creates .venv and uv.lock from pyproject.toml
-uv run python src/<script>.py
-uv add <package>        # add a dependency
+uv sync
 ```
+
+## Reproduce
+
+Run every command from the repository root.
+
+1. Prepare the data. This downloads the COCO annotations (about 240 MB) and only the images that contain people.
+
+   ```bash
+   uv run python src/prepare_coco.py                  # train and val
+   uv run python src/prepare_coco.py --splits val     # val only, enough for evaluation
+   uv run python src/prepare_coco.py --max-images 200 # small smoke-test subset
+   ```
+
+2. Train (optional, the trained weights are in `runs/`). 50 epochs take about 11 hours on one V100.
+
+   ```bash
+   uv run python src/train.py --model yolov8s.pt --epochs 50 --batch 32
+   sbatch scripts/train_newton.slurm                  # same run on Newton (see Notes)
+   ```
+
+3. Evaluate and analyze. Both use `runs/yolov8s_coco_person/weights/best.pt` by default.
+
+   ```bash
+   uv run python src/evaluate.py --device 0           # about 5 min, writes report/eval/
+   uv run python src/analyze.py --device 0            # about 12 min, writes report/analysis/
+   ```
+
+## Notes
+
+* COCO test2017 has no public labels, so val2017 is both the validation set during training and the final test set.
+* COCO labels dense groups of people as one *crowd* region. Training drops these boxes, and evaluation ignores detections inside them, as the official COCO evaluation does.
+* Two metric families are reported. Ultralytics validation gives precision, recall, and mAP (the table above). The official COCO evaluation (pycocotools) gives AP by size and condition. Its AP is about 1 point higher because it interpolates the precision-recall curve differently.
+* `--device` is a PyTorch CUDA index. PyTorch orders GPUs fastest first, which can differ from `nvidia-smi`. Set `CUDA_DEVICE_ORDER=PCI_BUS_ID` to make them agree.
+* Automatic mixed precision is off in `train.py`, because its start-up check hung on the Newton V100 nodes.
+* `scripts/train_newton.slurm` calls `prepare_coco.py --from-zip`, an option from a local version of the script that is not committed yet. Until it is, remove that flag or prepare the data before submitting the job.
