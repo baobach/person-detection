@@ -24,7 +24,6 @@ YOLOv8s fine-tuned to one class. A C2f and SPPF backbone feeds a bidirectional n
 ```
 configs/    dataset and training configs (YOLO data yaml)
 src/        data preparation, training, evaluation, visualization scripts
-notebooks/  exploration and result plots
 data/       COCO images and labels (not committed)
 runs/       trained YOLOv8s weights and metrics
 report/     final report, evaluation and analysis results, figures, sample detections
