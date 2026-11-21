@@ -1,7 +1,7 @@
 ---
 title: "Person Detection in Images with a Fine-Tuned YOLOv8s"
 subtitle: "CAP 5415 Computer Vision, Course Project. Submitted by Tejas Mahajan."
-author: "Tejas Mahajan"
+author: "Tejas Mahajan and Van Hoang Bao Bach"
 date: "November 2026"
 geometry: margin=2.2cm
 fontsize: 11pt
