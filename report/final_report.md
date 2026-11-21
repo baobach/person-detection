@@ -62,11 +62,11 @@ COCO test2017 has no public labels, so val2017 serves as the evaluation set. Sma
 
 ## Model
 
-We use YOLOv8s [10], the small variant (11.1 million parameters, 28.4 GFLOPs at 640x640). Figure 1 shows the architecture. Tejas Mahajan drew this figure. The backbone extracts features at strides 8, 16, and 32 (maps P3, P4, P5). The neck fuses them top-down (FPN) and bottom-up (PAN). An anchor-free head on each of the three maps predicts, for every location, one person score and the distance to the four box sides. Each side is a distribution over 16 bins (distribution focal loss). NMS then removes overlapping boxes.
+We use YOLOv8s [10], the small variant (11.1 million parameters, 28.4 GFLOPs at 640x640). Figure 1 shows the architecture. The backbone extracts features at strides 8, 16, and 32 (maps P3, P4, P5). The neck fuses them top-down (FPN) and bottom-up (PAN). An anchor-free head on each of the three maps predicts, for every location, one person score and the distance to the four box sides. Each side is a distribution over 16 bins (distribution focal loss). NMS then removes overlapping boxes.
 
 We start from the COCO-pretrained `yolov8s.pt` checkpoint, which detects 80 classes. For one class, Ultralytics replaces the classification layers of the head with a one-class version. The backbone, neck, and box-regression layers keep their pretrained weights.
 
-![YOLOv8s for single-class person detection. Figure by Tejas Mahajan.](person_detection_yolov8s_architecture.png){width=100%}
+![YOLOv8s for single-class person detection.](person_detection_yolov8s_architecture.png){width=100%}
 
 ## Training
 
