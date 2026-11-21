@@ -12,9 +12,21 @@ header-includes:
   - \usepackage{needspace}
 ---
 
+# Abstract {.unnumbered}
+
+Person detection is the task of finding every person in an image and placing a bounding box around each one. It is a standard problem in computer vision, and a first step for systems that have to notice people, from driving and robotics to search and surveillance. People are difficult to detect because they change in size, pose, and clothing, overlap in crowds, and are often partly hidden or poorly lit. This report presents a single-class person detector made by fine-tuning a pretrained YOLOv8s model on the person images of COCO 2017. We train for 50 epochs on 64,115 images and evaluate on the 2,693 person images of COCO val2017. Fine-tuning raises mAP@0.5 from 79.8% to 81.9% and mAP@0.5:0.95 from 57.0% to 59.0% compared with the original COCO-pretrained YOLOv8s, using only its person class. The error analysis shows that scale dominates the failures. Recall is 0.94 on large people and 0.50 on small people, and small people account for 75% of the misses. Accuracy also drops in crowded scenes and when more than half of the body is hidden. Lighting has little effect, and false alarms on empty background are rare. Without retraining, merging the predictions made at input sizes 640 and 960 raises COCO AP from 0.600 to 0.622, mostly by finding more small people.
+
 # Introduction
 
-Person detection finds every person in an image and draws a bounding box around each one. It is a core step for surveillance, autonomous driving, robotics, and photo search. The task is hard because people appear at very different sizes, stand in crowds where they overlap, are partly hidden by objects or other people, and are photographed under very different lighting.
+Object detection is one of the central tasks in computer vision. Image classification assigns a label to a whole picture. Object detection also has to say where each object is. The output is a set of bounding boxes, a class label for each box, and a confidence score. The number of objects changes from image to image, objects can overlap, and the same kind of object can fill most of the frame or cover only a few pixels. A useful detector has to handle that range in a single pass over the image.
+
+Person detection restricts the task to one class: person. It is one of the most studied forms of detection, because people are what many applications actually need, and because a person is among the most variable things in a photograph. Someone may stand, sit, walk, bend, or face away from the camera. Clothing, hair, bags, and uniforms change the appearance much more than they do for a rigid object such as a car or a traffic sign. The same person looks different at noon and at night, close to the lens and across a street.
+
+The boxes are the input to a larger system. A vehicle uses pedestrian locations before it brakes or changes lanes. A robot uses them to keep a safe distance or to hand something to a person. Surveillance, crowd counting, and sports analysis follow people from frame to frame. Photo libraries and image search use the boxes to organize pictures. In driving and robotics, a missed person is the costly failure, and the box has to be tight enough for a later stage, such as tracking or pose estimation, to use it.
+
+The conditions that make the problem hard show up in ordinary photographs. Distance from the camera sets the size: a person in the background may cover only a few dozen pixels, while a person in the foreground fills the frame. In a crowd, bodies overlap, so two people can look like one shape, and a correct box can be removed because it overlaps a neighbor's box. Furniture, other people, and the edge of the frame hide parts of the body, while the labeled box still covers the whole person, including the hidden part. Pose and viewpoint change which body parts are visible. Lighting runs from a dim indoor scene to harsh daylight. One model is expected to work across that whole range.
+
+Detectors themselves have moved from hand-designed features to features learned by a convolutional network. Older methods slid a window over the image and scored each window with a fixed descriptor. Current methods predict boxes directly, either in one stage or by proposing regions and then classifying them. One-stage detectors such as YOLO are common when the detector has to be fast, because it is only one piece of a larger pipeline. Section 2 reviews that work.
 
 Our goal was to build a deep-learning person detector, measure how well it works, and find out where it fails. We fine-tuned a pretrained YOLOv8s detector on the person images of COCO 2017 and evaluated it on COCO val2017. Our contributions are:
 
@@ -228,7 +240,7 @@ A YOLOv8s detector fine-tuned on the 64,115 COCO person images reaches 81.9% mAP
 
 # Reproducibility
 
-All code, the trained weights, and the results are in the repository:
+All code, the trained weights, and the results are in the repository: <https://github.com/baobach/person-detection>.
 
 ```bash
 uv sync
