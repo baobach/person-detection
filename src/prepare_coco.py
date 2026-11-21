@@ -1,4 +1,5 @@
-# Download and prepare the person-only dataset from COCO 2017 dataset. It will  prepare the train/test split with YOLO label ready for training.
+# Download and prepare the person-only subset of COCO 2017, with YOLO-format labels
+# for the train2017 and val2017 splits, ready for training.
 #   In:  COCO annotation JSON + COCO images
 #   Out: data/coco_person/{images,labels}/{train2017,val2017}/  (.jpg + matching .txt)
 #
@@ -97,12 +98,23 @@ def build_split(ann_file: Path):
 
 
 def write_label(path: Path, boxes) -> None:
+    """Write one YOLO label file: one "class cx cy w h" line per person box (normalized to 0-1)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [f"{YOLO_CLASS} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}" for cx, cy, w, h in boxes]
     path.write_text("\n".join(lines) + "\n")
 
 
 def prepare_split(split: str, ann_dir: Path, out_dir: Path, max_images: int | None, workers: int, seed: int) -> None:
+    """Build the person subset of one COCO split: write YOLO labels, then download the matching images.
+
+    Args:
+        split: "train" or "val".
+        ann_dir: folder with the COCO instances_*.json files.
+        out_dir: root of the YOLO dataset (images/ and labels/ go under it).
+        max_images: optional random cap on the number of images (for smoke tests).
+        workers: number of parallel download threads.
+        seed: random seed for the optional subsampling.
+    """
     subset = build_split(ann_dir / f"instances_{split}2017.json")
     ids = sorted(subset)
     if max_images is not None and max_images < len(ids):
@@ -167,6 +179,7 @@ def write_data_yaml(cfg: Path, out_dir: Path) -> None:
 
 
 def main() -> None:
+    """Parse command-line options, fetch the annotations, prepare each split, and write the data yaml."""
     ap = argparse.ArgumentParser(description="Prepare the COCO 2017 person subset in YOLO format.")
     ap.add_argument("--raw-dir", type=Path, default=ROOT / "data" / "coco_raw", help="where COCO annotations go")
     ap.add_argument("--out-dir", type=Path, default=ROOT / "data" / "coco_person", help="YOLO dataset output")

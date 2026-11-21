@@ -1,6 +1,6 @@
 # Full results
 
-YOLOv8s fine-tuned for 50 epochs on the COCO person subset. The final epoch was the best checkpoint (`runs/yolov8s_coco_person/weights/best.pt`).
+YOLOv8s fine-tuned for 50 epochs on the COCO person subset. The best checkpoint (`runs/yolov8s_coco_person/weights/best.pt`) is epoch 49. Epoch 50 (`last.pt`) is within 0.0001 mAP@0.5:0.95 of it.
 
 Validation is the COCO person `val2017` split: 2,693 images and 10,777 people.
 
@@ -8,7 +8,7 @@ Validation is the COCO person `val2017` split: 2,693 images and 10,777 people.
 | --- | --- | --- | --- |
 | 0.837 | 0.722 | 0.819 | 0.590 |
 
-Numbers are the last row of [metrics/results.csv](metrics/results.csv).
+Numbers are the last row (epoch 50) of [metrics/results.csv](metrics/results.csv).
 
 ## Person highlighting
 

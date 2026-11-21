@@ -39,5 +39,5 @@ x = torch.randn(2, 3, device="cuda")
 print("matmul_ok", (x @ x.T).shape)
 PY
 
-python src/prepare_coco.py --from-zip
+python src/prepare_coco.py
 python src/train.py --model yolov8s.pt --epochs 50 --batch 32 --workers 8 --name yolov8s_coco_person

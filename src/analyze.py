@@ -94,16 +94,19 @@ def load_ground_truth(ann_dir: Path, img_ids: list[int]):
 
 
 def occ_bin(occ: float | None) -> str | None:
+    """Return the occlusion bin name for a share of hidden keypoints, or None if the person has no keypoints."""
     if occ is None:
         return None
     return next(name for name, lo, hi in OCC_BINS if lo <= occ <= hi)
 
 
 def crowd_bin(n: int) -> str:
+    """Return the crowding bin name (from CROWD_BINS) for an image with n people."""
     return next(name for name, lo, hi in CROWD_BINS if lo <= n <= hi)
 
 
 def light_bin(brightness: float) -> str:
+    """Return "dark", "normal", or "bright" from an image's mean gray level (thresholds DARK and BRIGHT)."""
     return "dark" if brightness < DARK else "bright" if brightness > BRIGHT else "normal"
 
 
@@ -286,6 +289,7 @@ def scale_experiment(model, images, coco, img_ids, people, crowds, device) -> li
 # ---------------------------------------------------------------- figures
 
 def plot_figures(res: dict, exp: list[dict] | None, out: Path) -> None:
+    """Draw the report figures: breakdown by condition, detection outcomes, and (if run) the input-size experiment."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -391,6 +395,7 @@ def save_examples(res: dict, people, brightness, img_dir: Path, out: Path) -> li
         return (x2 - x1) * (y2 - y1) / (w * h)
 
     def missed(i, info, ppl, cond=lambda p: True):
+        """Count people in image i that were not matched by any detection and satisfy cond."""
         return sum(1 for p, m in zip(ppl, info["matched"]) if not m and cond(p))
 
     picks = {
@@ -424,6 +429,7 @@ def save_examples(res: dict, people, brightness, img_dir: Path, out: Path) -> li
 # ---------------------------------------------------------------- report
 
 def to_markdown(res: dict, exp: list[dict] | None, examples: list[dict]) -> str:
+    """Format the analysis, experiment, and failure-example tables as Markdown for results.md."""
     rec, ap = res["recall"], res["ap"]
     L = ["# Error analysis: fine-tuned YOLOv8s on COCO val2017 persons", "",
          f"Recall is measured at the deployed threshold (confidence {CONF}, IoU {IOU_MATCH}). "
@@ -488,6 +494,7 @@ def to_markdown(res: dict, exp: list[dict] | None, examples: list[dict]) -> str:
 
 
 def main() -> None:
+    """Run the error analysis and the input-size / TTA experiment, then save figures, examples, and tables."""
     ap = argparse.ArgumentParser(description="Error analysis and scale/TTA experiment.")
     ap.add_argument("--weights", type=Path, default=ROOT / "runs" / "yolov8s_coco_person" / "weights" / "best.pt")
     ap.add_argument("--data", type=Path, default=ROOT / "data" / "coco_person")
@@ -506,18 +513,22 @@ def main() -> None:
         raise SystemExit(f"no images in {img_dir}; run src/prepare_coco.py --splits val")
     img_ids = [int(p.stem) for p in images]
 
+    # 1. Ground truth (people, keypoint occlusion, crowd regions) and per-image brightness.
     print("loading ground truth and image brightness ...", flush=True)
     coco, people, crowds = load_ground_truth(args.ann_dir, img_ids)
     brightness = {int(p.stem): float(cv2.imread(str(p), cv2.IMREAD_GRAYSCALE).mean()) for p in images}
 
+    # 2. Predict at the training size (640) and score every box and every person.
     model = YOLO(str(args.weights))
     print("predicting at 640 ...", flush=True)
     dets = predict_coco(model, images, None, args.device, 640, 32)
     res = analyze(dets, coco, people, crowds, img_ids, brightness)
     examples = save_examples(res, people, brightness, img_dir, args.out)
 
+    # 3. Optional experiment: larger inputs, TTA, and the 640 + 960 merge.
     exp = None if args.skip_experiment else scale_experiment(model, images, coco, img_ids, people, crowds, args.device)
 
+    # 4. Save figures, numbers (JSON), and Markdown tables for the report.
     plot_figures(res, exp, args.out)
     saved = {k: v for k, v in res.items() if not k.startswith("_")}
     (args.out / "results.json").write_text(json.dumps({"analysis": saved, "experiment": exp, "examples": examples}, indent=2))

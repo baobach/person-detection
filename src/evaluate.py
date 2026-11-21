@@ -120,6 +120,7 @@ def dataset_stats(gt, img_ids: list[int]) -> dict:
 
 
 def pct(x: float) -> str:
+    """Format a 0-1 fraction as a percentage string with two decimals (0.835 -> "83.50")."""
     return f"{100 * x:.2f}"
 
 
@@ -156,6 +157,11 @@ def to_markdown(results: dict, stats: dict) -> str:
 
 
 def main() -> None:
+    """Evaluate the fine-tuned and pretrained models and write results.json and results.md.
+
+    Flow: load the val ground truth, group images by crowding, then for each model run
+    Ultralytics validation and the official COCO evaluation (overall and per crowding bin).
+    """
     ap = argparse.ArgumentParser(description="Evaluate person detectors on COCO val2017 persons.")
     ap.add_argument("--finetuned", type=Path, default=ROOT / "runs" / "yolov8s_coco_person" / "weights" / "best.pt")
     ap.add_argument("--pretrained", default="yolov8s.pt", help="stock COCO checkpoint used as the baseline")

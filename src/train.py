@@ -16,6 +16,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
+    """Parse command-line options and fine-tune a pretrained YOLO checkpoint on the COCO person subset.
+
+    Weights, the per-epoch log (results.csv), and plots are written to <project>/<name>/.
+    """
     ap = argparse.ArgumentParser(description="Fine-tune YOLO on the COCO person subset.")
     ap.add_argument("--model", default="yolov8s.pt", help="pretrained checkpoint to fine-tune")
     ap.add_argument("--data", type=Path, default=ROOT / "configs" / "coco_person.yaml")
@@ -30,8 +34,10 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
+    # Import here so --help works without loading PyTorch.
     from ultralytics import YOLO
 
+    # Load the COCO-pretrained checkpoint; Ultralytics swaps in a one-class head from the data yaml.
     model = YOLO(args.model)
     model.train(
         data=str(args.data),
@@ -52,6 +58,7 @@ def main() -> None:
         # Ultralytics' automatic mixed-precision probe hangs on these V100s.
         amp=False,
     )
+    # Print where the weights are and the last row of the epoch log, for the job output.
     run_dir = args.project / args.name
     csv_path = run_dir / "results.csv"
     print(f"TRAIN_DONE weights={run_dir / 'weights' / 'best.pt'}", flush=True)

@@ -2,7 +2,7 @@
 
 CAP 5415 Computer Vision course project. Team: Tejas Mahajan, Van Hoang Bao Bach.
 
-We fine-tune a pretrained YOLOv8s detector on the person images of COCO 2017, evaluate it on COCO val2017, and analyze where it fails: small people, crowded scenes, partial occlusion, and lighting. The full write-up is [`report/final_report.pdf`](report/final_report.pdf).
+We fine-tune a pretrained YOLOv8s detector on the person images of COCO 2017, evaluate it on COCO val2017, and analyze where it fails: small people, crowded scenes, partial occlusion, and lighting. The full write-up is [`report/final_report.pdf`](report/final_report.pdf). Each team member submits their own copy of the report, `report/UCFID-LastFirst-Project.pdf`, with their own Conclusion and My contribution sections. The submission zip holds the code, this README, the trained `best.pt`, and that report; the other folders listed below (results, figures, all detection images) are in the GitHub repository: https://github.com/baobach/person-detection.
 
 ## Results
 
@@ -13,7 +13,7 @@ Fine-tuned for 50 epochs on 64,115 COCO train2017 person images. Evaluated on th
 | Pretrained YOLOv8s, person class only | 82.75% | 69.77% | 79.76% | 57.02% |
 | **Fine-tuned YOLOv8s (ours)** | **83.50%** | **72.21%** | **81.94%** | **58.96%** |
 
-Main findings (details in the report, Sections 6 and 7):
+Main findings (details in the report, Sections 4.6 and 4.7):
 
 * **Size** is the main weakness. Recall is 0.94 for large people and 0.50 for small people (under 32x32 px). 75% of the missed people are small.
 * **Crowding:** COCO AP is 0.80 in images with one person and 0.55 in images with six or more.
@@ -47,11 +47,30 @@ data/                           COCO images and labels (not committed, made by p
 
 ## Setup
 
-The environment is managed with [uv](https://docs.astral.sh/uv/) (Python 3.11).
+Requirements: Python 3.11, an NVIDIA GPU with CUDA for training and evaluation (CPU works for small tests, slowly), and enough disk for about 67,000 COCO person images (roughly 11 GB, an estimate).
+
+Libraries (pinned versions in `uv.lock`; main ones: Ultralytics 8.4, PyTorch 2.15):
+
+* `ultralytics` (YOLOv8 training, validation, inference; installs `torch` and `torchvision`)
+* `pycocotools` (official COCO evaluation)
+* `opencv-python`, `matplotlib`, `pandas`, `numpy`
+
+The environment is managed with [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv sync
 ```
+
+Without uv, the same libraries install with pip:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install ultralytics pycocotools opencv-python matplotlib pandas
+```
+
+(With pip, drop the `uv run` prefix from the commands below.)
+
+The dataset is not included. `src/prepare_coco.py` downloads the COCO 2017 annotations and person images from the official COCO site (https://cocodataset.org).
 
 ## Reproduce
 
@@ -86,4 +105,3 @@ Run every command from the repository root.
 * Two metric families are reported. Ultralytics validation gives precision, recall, and mAP (the table above). The official COCO evaluation (pycocotools) gives AP by size and condition. Its AP is about 1 point higher because it interpolates the precision-recall curve differently.
 * `--device` is a PyTorch CUDA index. PyTorch orders GPUs fastest first, which can differ from `nvidia-smi`. Set `CUDA_DEVICE_ORDER=PCI_BUS_ID` to make them agree.
 * Automatic mixed precision is off in `train.py`, because its start-up check hung on the Newton V100 nodes.
-* `scripts/train_newton.slurm` calls `prepare_coco.py --from-zip`, an option from a local version of the script that is not committed yet. Until it is, remove that flag or prepare the data before submitting the job.
